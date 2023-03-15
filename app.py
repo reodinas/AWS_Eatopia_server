@@ -1,21 +1,44 @@
-from flask import Flask, jsonify, make_response
+from flask import Flask
+from flask_restful import Api
+from flask_jwt_extended import JWTManager
+
+from config import Config
+from resources.order import OrderResource, OrderListResource
+from resources.restaurant import RestaurantMenuResource, RestaurantResource, RestaurantListResource, RestaurantOrderResource
+
+from resources.user import UserLoginResource, UserLogoutResource, UserRegisterResource
+from resources.user import jwt_blocklist
 
 app = Flask(__name__)
+# 환경변수 셋팅
+app.config.from_object(Config)
+
+# JWT 매니저 초기화(initialize)
+# JWTManager(app)을 설정해줘야 flask istance에서 jwt를 사용할 수 있게 된다.
+jwt = JWTManager(app)
+
+# 로그아웃된 토큰으로 요청하는 경우 처리하는 코드작성.
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload['jti']
+    return jti in jwt_blocklist
 
 
-@app.route("/")
-def hello_from_root():
-    return jsonify(message='Hello from root!')
+api = Api(app)
+
+# 경로와 리소스를 연결한다.
+api.add_resource(UserRegisterResource, '/user/register')
+api.add_resource(UserLoginResource, '/user/login')
+api.add_resource(UserLogoutResource, '/user/logout')
+
+api.add_resource(RestaurantListResource, '/restaurant')
+api.add_resource(RestaurantResource, '/restaurant/<int:restaurantId>')
+api.add_resource(RestaurantMenuResource, '/restaurant/<int:restaurantId>/menu')
+api.add_resource(RestaurantOrderResource, '/restaurant/<int:restaurantId>/order')
+
+api.add_resource(OrderListResource, '/order')
+api.add_resource(OrderResource, '/order/<int:orderId>')
 
 
-@app.route("/hello")
-def hello():
-    return jsonify(message='Hello from path!')
-
-
-@app.errorhandler(404)
-def resource_not_found(e):
-    return make_response(jsonify(error='Not found!'), 404)
-
-if __name__ == '__main__' :
+if __name__ == '__main__':
     app.run()

@@ -26,12 +26,17 @@
 # along with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 
+# mypy: disable-error-code="str-bytes-safe,misc"
+
 """Kerberos Authentication Plugin."""
 
 import getpass
 import logging
 import os
 import struct
+
+from pathlib import Path
+from typing import Any, Optional, Tuple
 
 from .. import errors
 
@@ -59,19 +64,21 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 _LOGGER = logging.getLogger(__name__)
 
-AUTHENTICATION_PLUGIN_CLASS = "MySQLKerberosAuthPlugin"
+AUTHENTICATION_PLUGIN_CLASS = (
+    "MySQLSSPIKerberosAuthPlugin" if os.name == "nt" else "MySQLKerberosAuthPlugin"
+)
 
 
 # pylint: disable=c-extension-no-member,no-member
 class MySQLKerberosAuthPlugin(BaseAuthPlugin):
     """Implement the MySQL Kerberos authentication plugin."""
 
-    plugin_name = "authentication_kerberos_client"
-    requires_ssl = False
-    context = None
+    plugin_name: str = "authentication_kerberos_client"
+    requires_ssl: bool = False
+    context: Optional[gssapi.SecurityContext] = None
 
     @staticmethod
-    def get_user_from_credentials():
+    def get_user_from_credentials() -> str:
         """Get user from credentials without realm."""
         try:
             creds = gssapi.Credentials(usage="initiate")
@@ -82,27 +89,63 @@ class MySQLKerberosAuthPlugin(BaseAuthPlugin):
         except gssapi.raw.misc.GSSError:
             return getpass.getuser()
 
-    def _acquire_cred_with_password(self, upn):
-        """Acquire credentials through provided password."""
-        _LOGGER.debug("Attempt to acquire credentials through provided password")
+    @staticmethod
+    def get_store() -> dict:
+        """Get a credentials store dictionary.
 
-        username = gssapi.raw.names.import_name(
-            upn.encode("utf-8"), name_type=gssapi.NameType.user
+        Returns:
+            dict: Credentials store dictionary with the krb5 ccache name.
+
+        Raises:
+            errors.InterfaceError: If 'KRB5CCNAME' environment variable is empty.
+        """
+        krb5ccname = os.environ.get(
+            "KRB5CCNAME",
+            f"/tmp/krb5cc_{os.getuid()}"
+            if os.name == "posix"
+            else Path("%TEMP%").joinpath("krb5cc"),
         )
+        if not krb5ccname:
+            raise errors.InterfaceError(
+                "The 'KRB5CCNAME' environment variable is set to empty"
+            )
+        _LOGGER.debug("Using krb5 ccache name: FILE:%s", krb5ccname)
+        store = {b"ccache": f"FILE:{krb5ccname}".encode("utf-8")}
+        return store
+
+    def _acquire_cred_with_password(self, upn: str) -> gssapi.raw.creds.Creds:
+        """Acquire and store credentials through provided password.
+
+        Args:
+            upn (str): User Principal Name.
+
+        Returns:
+            gssapi.raw.creds.Creds: GSSAPI credentials.
+        """
+        _LOGGER.debug("Attempt to acquire credentials through provided password")
+        user = gssapi.Name(upn, gssapi.NameType.user)
+        password = self._password.encode("utf-8")
 
         try:
             acquire_cred_result = gssapi.raw.acquire_cred_with_password(
-                username, self._password.encode("utf-8"), usage="initiate"
+                user, password, usage="initiate"
+            )
+            creds = acquire_cred_result.creds
+            gssapi.raw.store_cred_into(
+                self.get_store(),
+                creds=creds,
+                mech=gssapi.MechType.kerberos,
+                overwrite=True,
+                set_default=True,
             )
         except gssapi.raw.misc.GSSError as err:
             raise errors.ProgrammingError(
                 f"Unable to acquire credentials with the given password: {err}"
             )
-        creds = acquire_cred_result[0]
         return creds
 
     @staticmethod
-    def _parse_auth_data(packet):
+    def _parse_auth_data(packet: bytes) -> Tuple[str, str]:
         """Parse authentication data.
 
         Get the SPN and REALM from the authentication data packet.
@@ -127,8 +170,8 @@ class MySQLKerberosAuthPlugin(BaseAuthPlugin):
 
         return spn.decode(), realm.decode()
 
-    def auth_response(self, auth_data=None):
-        """Prepare the fist message to the server."""
+    def auth_response(self, auth_data: Optional[bytes] = None) -> Optional[bytes]:
+        """Prepare the first message to the server."""
         spn = None
         realm = None
 
@@ -145,11 +188,10 @@ class MySQLKerberosAuthPlugin(BaseAuthPlugin):
 
         _LOGGER.debug("Service Principal: %s", spn)
         _LOGGER.debug("Realm: %s", realm)
-        _LOGGER.debug("Username: %s", self._username)
 
         try:
-            # Attempt to retrieve credentials from default cache file
-            creds = gssapi.Credentials(usage="initiate")
+            # Attempt to retrieve credentials from cache file
+            creds: Any = gssapi.Credentials(usage="initiate")
             creds_upn = str(creds.name)
 
             _LOGGER.debug("Cached credentials found")
@@ -199,14 +241,16 @@ class MySQLKerberosAuthPlugin(BaseAuthPlugin):
         )
 
         try:
-            initial_client_token = self.context.step()
+            initial_client_token: Optional[bytes] = self.context.step()
         except gssapi.raw.misc.GSSError as err:
             raise errors.InterfaceError(f"Unable to initiate security context: {err}")
 
         _LOGGER.debug("Initial client token: %s", initial_client_token)
         return initial_client_token
 
-    def auth_continue(self, tgt_auth_challenge):
+    def auth_continue(
+        self, tgt_auth_challenge: Optional[bytes]
+    ) -> Tuple[Optional[bytes], bool]:
         """Continue with the Kerberos TGT service request.
 
         With the TGT authentication service given response generate a TGT
@@ -223,14 +267,14 @@ class MySQLKerberosAuthPlugin(BaseAuthPlugin):
         """
         _LOGGER.debug("tgt_auth challenge: %s", tgt_auth_challenge)
 
-        resp = self.context.step(tgt_auth_challenge)
+        resp: Optional[bytes] = self.context.step(tgt_auth_challenge)
 
         _LOGGER.debug("Context step response: %s", resp)
         _LOGGER.debug("Context completed?: %s", self.context.complete)
 
         return resp, self.context.complete
 
-    def auth_accept_close_handshake(self, message):
+    def auth_accept_close_handshake(self, message: bytes) -> bytes:
         """Accept handshake and generate closing handshake message for server.
 
         This method verifies the server authenticity from the given message
@@ -288,13 +332,13 @@ class MySQLKerberosAuthPlugin(BaseAuthPlugin):
 class MySQLSSPIKerberosAuthPlugin(BaseAuthPlugin):
     """Implement the MySQL Kerberos authentication plugin with Windows SSPI"""
 
-    plugin_name = "authentication_kerberos_client"
-    requires_ssl = False
-    context = None
-    clientauth = None
+    plugin_name: str = "authentication_kerberos_client"
+    requires_ssl: bool = False
+    context: Any = None
+    clientauth: Any = None
 
     @staticmethod
-    def _parse_auth_data(packet):
+    def _parse_auth_data(packet: bytes) -> Tuple[str, str]:
         """Parse authentication data.
 
         Get the SPN and REALM from the authentication data packet.
@@ -319,7 +363,7 @@ class MySQLSSPIKerberosAuthPlugin(BaseAuthPlugin):
 
         return spn.decode(), realm.decode()
 
-    def auth_response(self, auth_data=None):
+    def auth_response(self, auth_data: Optional[bytes] = None) -> Optional[bytes]:
         """Prepare the first message to the server."""
         _LOGGER.debug("auth_response for sspi")
         spn = None
@@ -333,7 +377,6 @@ class MySQLSSPIKerberosAuthPlugin(BaseAuthPlugin):
 
         _LOGGER.debug("Service Principal: %s", spn)
         _LOGGER.debug("Realm: %s", realm)
-        _LOGGER.debug("Username: %s", self._username)
 
         if sspicon is None or sspi is None:
             raise errors.ProgrammingError(
@@ -352,8 +395,27 @@ class MySQLSSPIKerberosAuthPlugin(BaseAuthPlugin):
         _LOGGER.debug("targetspn: %s", targetspn)
         _LOGGER.debug("_auth_info is None: %s", _auth_info is None)
 
+        # The Security Support Provider Interface (SSPI) is an interface
+        # that allows us to choose from a set of SSPs available in the
+        # system; the idea of SSPI is to keep interface consistent no
+        # matter what back end (a.k.a., SSP) we choose.
+
+        # When using SSPI we should not use Kerberos directly as SSP,
+        # as remarked in [2], but we can use it indirectly via another
+        # SSP named Negotiate that acts as an application layer between
+        # SSPI and the other SSPs [1].
+
+        # Negotiate can select between Kerberos and NTLM on the fly;
+        # it chooses Kerberos unless it cannot be used by one of the
+        # systems involved in the authentication or the calling
+        # application did not provide sufficient information to use
+        # Kerberos.
+
+        # prefix: https://docs.microsoft.com/en-us/windows/win32/secauthn
+        # [1] prefix/microsoft-negotiate?source=recommendations
+        # [2] prefix/microsoft-kerberos?source=recommendations
         self.clientauth = sspi.ClientAuth(
-            "Kerberos",
+            "Negotiate",
             targetspn=targetspn,
             auth_info=_auth_info,
             scflags=sum(flags),
@@ -376,7 +438,9 @@ class MySQLSSPIKerberosAuthPlugin(BaseAuthPlugin):
         _LOGGER.debug("Initial client token: %s", initial_client_token)
         return initial_client_token
 
-    def auth_continue(self, tgt_auth_challenge):
+    def auth_continue(
+        self, tgt_auth_challenge: Optional[bytes]
+    ) -> Tuple[Optional[bytes], bool]:
         """Continue with the Kerberos TGT service request.
 
         With the TGT authentication service given response generate a TGT
@@ -402,10 +466,3 @@ class MySQLSSPIKerberosAuthPlugin(BaseAuthPlugin):
         _LOGGER.debug("Context completed?: %s", self.clientauth.authenticated)
 
         return resp, self.clientauth.authenticated
-
-
-# pylint: enable=c-extension-no-member,no-member
-
-
-if os.name == "nt":
-    MySQLKerberosAuthPlugin = MySQLSSPIKerberosAuthPlugin

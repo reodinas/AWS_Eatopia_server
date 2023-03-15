@@ -7,8 +7,9 @@
     "provider": {
       "name": "aws",
       "runtime": "python3.9",
+      "region": "ap-northeast-2",
+      "timeout": 20,
       "stage": "dev",
-      "region": "us-east-1",
       "versionFunctions": true,
       "compiledCloudFormationTemplate": {
         "AWSTemplateFormatVersion": "2010-09-09",
@@ -167,52 +168,6 @@
               }
             }
           },
-          "EnterpriseLogAccessIamRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-              "AssumeRolePolicyDocument": {
-                "Version": "2012-10-17",
-                "Statement": [
-                  {
-                    "Effect": "Allow",
-                    "Principal": {
-                      "AWS": "arn:aws:iam::802587217904:root"
-                    },
-                    "Action": "sts:AssumeRole",
-                    "Condition": {
-                      "StringEquals": {
-                        "sts:ExternalId": "ServerlessEnterprise-280601c9-3342-4cd5-810c-9b4b1d22a959"
-                      }
-                    }
-                  }
-                ]
-              },
-              "Policies": [
-                {
-                  "PolicyName": "LogFilterAccess",
-                  "PolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                      {
-                        "Effect": "Allow",
-                        "Action": [
-                          "logs:FilterLogEvents"
-                        ],
-                        "Resource": [
-                          {
-                            "Fn::GetAtt": [
-                              "ApiLogGroup",
-                              "Arn"
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
-          },
           "ApiLambdaFunction": {
             "Type": "AWS::Lambda::Function",
             "Properties": {
@@ -220,13 +175,13 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/aws-eatopia-server/dev/1678873076000-2023-03-15T09:37:56.000Z/aws-eatopia-server.zip"
+                "S3Key": "serverless/aws-eatopia-server/dev/1678875250213-2023-03-15T10:14:10.213Z/aws-eatopia-server.zip"
               },
-              "Handler": "s_api.handler",
+              "Handler": "wsgi_handler.handler",
               "Runtime": "python3.9",
               "FunctionName": "aws-eatopia-server-dev-api",
               "MemorySize": 1024,
-              "Timeout": 6,
+              "Timeout": 20,
               "Role": {
                 "Fn::GetAtt": [
                   "IamRoleLambdaExecution",
@@ -238,14 +193,14 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersionLrq7NG3deJVFJrJYbwXErMRcHePcVZohjhAiKGCGE": {
+          "ApiLambdaVersioninJEWzpAFl3jEqw3BIh98GHhY8c6NeccGU82DkMkM": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "PwOyQ6Yj03pjUZr9iCggnExbr2ik7x8KBY7eqbWJfI8="
+              "CodeSha256": "1l78BBa8FUESz9e/B+2BObYOtIU4qREOJVrhaQwHeo8="
             }
           },
           "HttpApi": {
@@ -253,12 +208,6 @@
             "Properties": {
               "Name": "dev-aws-eatopia-server",
               "ProtocolType": "HTTP"
-            }
-          },
-          "HttpApiLogGroup": {
-            "Type": "AWS::Logs::LogGroup",
-            "Properties": {
-              "LogGroupName": "/aws/http-api/aws-eatopia-server-dev"
             }
           },
           "HttpApiStage": {
@@ -271,18 +220,8 @@
               "AutoDeploy": true,
               "DefaultRouteSettings": {
                 "DetailedMetricsEnabled": false
-              },
-              "AccessLogSettings": {
-                "DestinationArn": {
-                  "Fn::GetAtt": [
-                    "HttpApiLogGroup",
-                    "Arn"
-                  ]
-                },
-                "Format": "{\"requestTime\":\"$context.requestTime\",\"requestId\":\"$context.requestId\",\"apiId\":\"$context.apiId\",\"resourcePath\":\"$context.routeKey\",\"path\":\"$context.path\",\"httpMethod\":\"$context.httpMethod\",\"stage\":\"$context.stage\",\"status\":\"$context.status\",\"integrationStatus\":\"$context.integrationStatus\",\"integrationLatency\":\"$context.integrationLatency\",\"responseLatency\":\"$context.responseLatency\",\"responseLength\":\"$context.responseLength\",\"errorMessage\":\"$context.error.message\",\"format\":\"SLS_HTTP_API_LOG\",\"version\":\"1.0.0\"}"
               }
-            },
-            "DependsOn": "HttpApiLogGroup"
+            }
           },
           "ApiLambdaPermissionHttpApi": {
             "Type": "AWS::Lambda::Permission",
@@ -355,26 +294,6 @@
               }
             },
             "DependsOn": "HttpApiIntegrationApi"
-          },
-          "CWLSubFilterApiLogGroupUsEast1": {
-            "Type": "AWS::Logs::SubscriptionFilter",
-            "Properties": {
-              "DestinationArn": "arn:aws:logs:us-east-1:802587217904:destination:280601c9-3342-4cd5-810c-9b4b1d22a959#yC01CTZnjmYXLR4dRp#aws-eatopia-server#dev",
-              "FilterPattern": "?\"REPORT RequestId: \" ?\"SERVERLESS_ENTERPRISE\"",
-              "LogGroupName": {
-                "Ref": "ApiLogGroup"
-              }
-            }
-          },
-          "CWLSubFilterHttpApiLogGroupUsEast1": {
-            "Type": "AWS::Logs::SubscriptionFilter",
-            "Properties": {
-              "DestinationArn": "arn:aws:logs:us-east-1:802587217904:destination:280601c9-3342-4cd5-810c-9b4b1d22a959#yC01CTZnjmYXLR4dRp#aws-eatopia-server#dev",
-              "FilterPattern": "\"SLS_HTTP_API_LOG\"",
-              "LogGroupName": {
-                "Ref": "HttpApiLogGroup"
-              }
-            }
           }
         },
         "Outputs": {
@@ -386,21 +305,10 @@
               "Name": "sls-aws-eatopia-server-dev-ServerlessDeploymentBucketName"
             }
           },
-          "EnterpriseLogAccessIamRole": {
-            "Value": {
-              "Fn::GetAtt": [
-                "EnterpriseLogAccessIamRole",
-                "Arn"
-              ]
-            },
-            "Export": {
-              "Name": "sls-aws-eatopia-server-dev-EnterpriseLogAccessIamRole"
-            }
-          },
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersionLrq7NG3deJVFJrJYbwXErMRcHePcVZohjhAiKGCGE"
+              "Ref": "ApiLambdaVersioninJEWzpAFl3jEqw3BIh98GHhY8c6NeccGU82DkMkM"
             },
             "Export": {
               "Name": "sls-aws-eatopia-server-dev-ApiLambdaFunctionQualifiedArn"
@@ -524,11 +432,6 @@
           }
         }
       },
-      "logs": {
-        "httpApi": {
-          "format": "{\"requestTime\":\"$context.requestTime\",\"requestId\":\"$context.requestId\",\"apiId\":\"$context.apiId\",\"resourcePath\":\"$context.routeKey\",\"path\":\"$context.path\",\"httpMethod\":\"$context.httpMethod\",\"stage\":\"$context.stage\",\"status\":\"$context.status\",\"integrationStatus\":\"$context.integrationStatus\",\"integrationLatency\":\"$context.integrationLatency\",\"responseLatency\":\"$context.responseLatency\",\"responseLength\":\"$context.responseLength\",\"errorMessage\":\"$context.error.message\",\"format\":\"SLS_HTTP_API_LOG\",\"version\":\"1.0.0\"}"
-        }
-      },
       "vpc": {}
     },
     "custom": {
@@ -543,7 +446,7 @@
     "pluginsData": {},
     "functions": {
       "api": {
-        "handler": "s_api.handler",
+        "handler": "wsgi_handler.handler",
         "events": [
           {
             "httpApi": "*",
@@ -553,17 +456,15 @@
         "name": "aws-eatopia-server-dev-api",
         "package": {},
         "memory": 1024,
-        "timeout": 6,
+        "timeout": 20,
         "runtime": "python3.9",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersionLrq7NG3deJVFJrJYbwXErMRcHePcVZohjhAiKGCGE"
+        "versionLogicalId": "ApiLambdaVersioninJEWzpAFl3jEqw3BIh98GHhY8c6NeccGU82DkMkM"
       }
     },
     "configValidationMode": "warn",
     "serviceFilename": "serverless.yml",
     "initialServerlessConfig": {
-      "org": "reodinas",
-      "app": "aws-eatopia-server",
       "service": "aws-eatopia-server",
       "frameworkVersion": "3",
       "custom": {
@@ -579,17 +480,12 @@
         "$ref": "$[\"service\"][\"plugins\"]"
       }
     },
-    "app": "aws-eatopia-server",
-    "org": "reodinas",
     "layers": {},
-    "isDashboardMonitoringPreconfigured": true,
-    "isDashboardAppPreconfigured": true,
-    "orgUid": "280601c9-3342-4cd5-810c-9b4b1d22a959",
-    "appUid": "yC01CTZnjmYXLR4dRp",
-    "artifact": "C:\\Users\\5-25\\Documents\\GitHub\\aws-eatopia-server\\.serverless\\aws-eatopia-server.zip"
+    "isDashboardMonitoringPreconfigured": false,
+    "artifact": "C:\\Users\\5-25\\Documents\\GitHub\\AWS_Eatopia_server\\.serverless\\aws-eatopia-server.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/aws-eatopia-server/dev/1678873076000-2023-03-15T09:37:56.000Z",
+    "artifactDirectoryName": "serverless/aws-eatopia-server/dev/1678875250213-2023-03-15T10:14:10.213Z",
     "artifact": "aws-eatopia-server.zip"
   }
 }
