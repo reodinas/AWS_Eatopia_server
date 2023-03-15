@@ -1,0 +1,23 @@
+name: serverless deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install SLS and Deploy
+        uses: serverless/github-action@v3
+        with:
+          args: -c "sls plugin install -n serverless-wsgi && sls plugin install -n serverless-python-requirements && serverless deploy"
+          entrypoint: /bin/sh
+        env:
+          AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
+          AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
