@@ -164,8 +164,7 @@ class RestaurantListResource(Resource):
 
         return {'result' : 'success',
                 'items' : result_list,
-                'count' : len(result_list),
-                'msg' : 'hi'}
+                'count' : len(result_list)}
     
 
 class RestaurantResource(Resource):
