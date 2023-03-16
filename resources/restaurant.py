@@ -272,10 +272,10 @@ class RestaurantOrderResource(Resource):
             # 1. order 테이블에 저장
             query = '''
                     insert into orders
-                    (userId, restaurantId, people, reservTime)
-                    values (%s, %s, %s, %s);
+                    (userId, restaurantId, people, reservTime, type)
+                    values (%s, %s, %s, %s, %s);
                     '''
-            record = [userId, restaurantId, data['people'], data['reservTime']]
+            record = [userId, restaurantId, data['people'], data['reservTime'], data['type']]
 
             cursor = connection.cursor()
             cursor.execute(query, record)
@@ -302,6 +302,7 @@ class RestaurantOrderResource(Resource):
             cursor.close()
             connection.close()
             return {'error' : str(e)}, 500
+        
 
         return {'result' : 'success',
                 'orderId' : orderId}, 200
