@@ -127,7 +127,9 @@ class RestaurantListResource(Resource):
                 return {'error' : str(e)}, 500
             
             if not result_list:
-                return {'msg' : '검색결과가 없습니다.'}, 205 
+                return {'result' : 'success',
+                        'items' : result_list,
+                        'count' : len(result_list)}, 200
 
 
         # 가게와의 거리를 계산하기 위해 데이터프레임으로
@@ -164,7 +166,7 @@ class RestaurantListResource(Resource):
 
         return {'result' : 'success',
                 'items' : result_list,
-                'count' : len(result_list)}
+                'count' : len(result_list)}, 200
     
 
 class RestaurantResource(Resource):
