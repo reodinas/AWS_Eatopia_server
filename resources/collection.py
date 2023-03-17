@@ -120,7 +120,7 @@ class CollectionListResource(Resource):
                 collections=response['CollectionIds']
 
                 for collection in collections:
-                    print(collection)
+                    # print(collection)
                     collectionList.append(collection)
                     collection_count+=1
                 if 'NextToken' in response:
