@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager
 
 from config import Config
 from resources.collection import CollectionListResource, CollectionResource
-from resources.face import FaceResource
+from resources.face import FaceResource, FaceSearchResource
 from resources.order import OrderResource, OrderListResource
 from resources.restaurant import RestaurantMenuResource, RestaurantResource, RestaurantListResource, RestaurantOrderResource
 
@@ -44,7 +44,7 @@ api.add_resource(OrderResource, '/order/<int:orderId>')
 api.add_resource(CollectionResource, '/collection')
 api.add_resource(CollectionListResource, '/collection/list')
 api.add_resource(FaceResource, '/faces')
-# api.add_resource(FaceSearchResource, '/faces/search')
+api.add_resource(FaceSearchResource, '/faces/search')
 
 
 

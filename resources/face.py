@@ -5,6 +5,7 @@ import boto3
 from botocore.exceptions import ClientError
 from mysql.connector import Error
 from flask_jwt_extended import jwt_required, get_jwt_identity
+import base64
 
 from config import Config
 from mysql_connection import get_connection
@@ -25,12 +26,10 @@ class FaceResource(Resource):
         
         file = request.files['photo']
 
-        print(file.content_type)
-
         userId = get_jwt_identity()
 
         if 'image' not in file.content_type:
-            return {'error' : '이미지파일만 업로드하세요.'}
+            return {'error' : '이미지 파일만 업로드하세요.'}
         
         # 1-1. 이미 등록된 유저인지 확인한다.
         try:
@@ -83,20 +82,11 @@ class FaceResource(Resource):
                                         MaxFaces=1,
                                         QualityFilter="AUTO",
                                         DetectionAttributes=['DEFAULT'])
+            # print(response)
             
-            # print ('Results for ' + fileName) 	
-            # print('Faces indexed:')						
-            # for faceRecord in response['FaceRecords']:
-            #     print('  Face ID: ' + faceRecord['Face']['FaceId'])
-            #     print('  Location: {}'.format(faceRecord['Face']['BoundingBox']))
+            if not response['FaceRecords']:
+                return {'error': '사진에서 얼굴 정보를 찾을 수 없습니다.'}, 400
 
-            # print('Faces not indexed:')
-            # for unindexedFace in response['UnindexedFaces']:
-            #     print(' Location: {}'.format(unindexedFace['FaceDetail']['BoundingBox']))
-            #     print(' Reasons:')
-            #     for reason in unindexedFace['Reasons']:
-            #         print('   ' + reason)
-        
             faceId = response['FaceRecords'][0]['Face']['FaceId']
 
         except ClientError as e:
@@ -145,7 +135,7 @@ class FaceResource(Resource):
                 'faceId' : faceId}, 200
     
 
-    # 등록된 얼굴 삭제 API
+    # 컬렉션에 등록된 얼굴 삭제 API
     @jwt_required()
     def delete(self):
 
@@ -225,3 +215,95 @@ class FaceResource(Resource):
         
         return {'result' : 'success',
                 'msg' : f"userId: {userId}'s face information was deleted."}, 200
+    
+
+class FaceSearchResource(Resource):
+
+    # 얼굴검색 API
+    def post(self):
+
+        # 1. 클라이언트로부터 데이터를 받아온다.
+        # form-data
+        # -photo : file
+        if 'photo' not in request.files:
+            return {'error' : '파일을 업로드 하세요.'}, 400
+        
+        file = request.files['photo']
+
+        # todo: restaurantId를 업체용 앱 jwt에서 받도록 수정
+        restaurantId = request.form['restaurantId']
+
+        if 'image' not in file.content_type:
+            return {'error' : '이미지 파일만 업로드하세요.'}
+
+        # 2. 이미지파일을 base64로 인코딩
+        baseImg = base64.b64encode(file.read())
+        # 인코딩 된 사진을 byte로 디코딩
+        byteImg = base64.decodebytes(baseImg)
+
+        # 3. 컬렉션에서 이미지 검색
+        try:
+            client=boto3.client('rekognition',
+                                'ap-northeast-2',
+                                aws_access_key_id= Config.ACCESS_KEY,
+                                aws_secret_access_key= Config.SECRET_ACCESS)
+            
+            threshold = 95
+            maxFaces=1
+
+            response=client.search_faces_by_image(CollectionId=Config.COLLECTION_ID,
+                                Image= {'Bytes': byteImg},
+                                FaceMatchThreshold= threshold,
+                                MaxFaces= maxFaces)
+            print(response)
+            faceMatches=response['FaceMatches']
+
+            if not faceMatches:
+
+                return {'result' : 'success',
+                        'msg' : '등록되지 않은 고객입니다.'}, 200
+
+            faceId = faceMatches[0]['Face']['FaceId']
+            similarity = faceMatches[0]['Similarity']
+
+        except ClientError as e:
+            return {'error' : str(e)}, e.response['ResponseMetadata']['HTTPStatusCode']
+
+        # 4. DB에서 일치하는 회원의 정보, 주문정보 가져오기
+  
+        try:
+            connection = get_connection()
+            query = '''
+                    select f.userId,f.imgUrl, f.faceId, u.nickname, u.phone,
+                        o.id as orderId, o.restaurantId, o.people, o.reservTime,
+                        o.type, o.createdAt, o.isFinished
+                    from face f
+                    join users u
+                    on f.userId = u.id
+                    left join orders o
+                    on f.userId = o.userId and o.restaurantId = %s and o.isFinished = 0
+                    where faceId = %s
+                    order by reservTime asc;
+                    '''
+            record = (restaurantId, faceId)
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query, record)
+            result_list = cursor.fetchall()
+            
+            for row in result_list:
+                if row['orderId']:
+                    row['reservTime'] = row['reservTime'].isoformat()
+                    row['createdAt'] = row['createdAt'].isoformat()
+            
+            cursor.close()
+            connection.close()
+        
+        except Error as e:
+            print(e)
+            cursor.close()
+            connection.close()
+            return {'error' : str(e)}, 500
+
+        return {'result' : 'success',
+                'items' : result_list,
+                'similarity' : similarity}, 200

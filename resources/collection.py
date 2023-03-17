@@ -40,8 +40,7 @@ class CollectionResource(Resource):
                 }
             }
             """
-            return {'Code': e.response['Error']['Code'],
-                    'Message': e.response['Error']['Message']}, e.response['ResponseMetadata']['HTTPStatusCode']
+            return {'error' : str(e)}, e.response['ResponseMetadata']['HTTPStatusCode']
         
         return {'result' : 'success',
                 'Collection Arn' : response['CollectionArn']}, 200
@@ -66,8 +65,7 @@ class CollectionResource(Resource):
 
             
         except ClientError as e:
-            return {'Code': e.response['Error']['Code'],
-                    'Message': e.response['Error']['Message']}, e.response['ResponseMetadata']['HTTPStatusCode']
+            return {'error' : str(e)}, e.response['ResponseMetadata']['HTTPStatusCode']
         
         return {'result': 'success',
                 "CollectionARN": response['CollectionARN'],
@@ -91,8 +89,7 @@ class CollectionResource(Resource):
             status_code=response['StatusCode']
             
         except ClientError as e:
-            return {'Code': e.response['Error']['Code'],
-                    'Message': e.response['Error']['Message']}, e.response['ResponseMetadata']['HTTPStatusCode']
+            return {'error' : str(e)}, e.response['ResponseMetadata']['HTTPStatusCode']
        
         return {'result' : 'success',
                 'msg': f'collection id: {collectionId} was deleted.'}, status_code
@@ -131,8 +128,7 @@ class CollectionListResource(Resource):
                     done=True
 
         except ClientError as e:
-            return {'Code': e.response['Error']['Code'],
-                    'Message': e.response['Error']['Message']}, e.response['ResponseMetadata']['HTTPStatusCode']
+            return {'error' : str(e)}, e.response['ResponseMetadata']['HTTPStatusCode']
 
         return {'result' : 'success',
                 'collectionList' : collectionList,
