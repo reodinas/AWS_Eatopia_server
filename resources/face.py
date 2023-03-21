@@ -231,7 +231,7 @@ class FaceSearchResource(Resource):
         file = request.files['photo']
 
         # todo: restaurantId를 업체용 앱 jwt에서 받도록 수정
-        restaurantId = request.form['restaurantId']
+        restaurantId = int(request.args.get('restaurantId'))
 
         if 'image' not in file.content_type:
             return {'error' : '이미지 파일만 업로드하세요.'}
