@@ -33,11 +33,10 @@ class OrderListResource(Resource):
                     from orders
                     where userId = %s
                     order by createdAt desc;
-                    limit '''+offset+''', ''' +limit+''';
+                    limit '''+offset+''', '''+limit+''';
                     '''
             record = (userId, )
-
-            cursor = connection.cursor(dictionary=True)
+            cursor = connection.cursor(dictionary=True, buffered=True)
             cursor.execute(query, record)
             result_list = cursor.fetchall()
 
