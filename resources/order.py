@@ -37,7 +37,7 @@ class OrderListResource(Resource):
                     '''
             record = (userId, )
 
-            cursor = connection.cursor(dictionary=True)
+            cursor = connection.cursor(dictionary=True, buffered=True)
             cursor.execute(query, record)
             result_list = cursor.fetchall()
 
