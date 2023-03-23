@@ -274,24 +274,32 @@ class FaceSearchResource(Resource):
         try:
             connection = get_connection()
             query = '''
-                    select f.userId,f.imgUrl, f.faceId, u.nickname, u.phone,
-                        o.id as orderId, o.restaurantId, o.people, o.reservTime,
-                        o.type, o.createdAt, o.isFinished
+                    select f.userId, f.imgUrl, f.faceId, u.nickname, u.phone
                     from face f
                     join users u
                     on f.userId = u.id
-                    left join orders o
-                    on f.userId = o.userId and o.restaurantId = %s and o.isFinished = 0
-                    where faceId = %s
-                    order by reservTime asc;
+                    where faceId = %s;
                     '''
-            record = (restaurantId, faceId)
+            record = (faceId, )
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query, record)
-            result_list = cursor.fetchall()
+            userInfo = cursor.fetchone()
+
+            userId = userInfo['userId']
             
-            for row in result_list:
-                if row['orderId']:
+            # 로컬시간: now() + 9시간, 유예시간: 30분 
+            query = '''
+                    select *
+                    from orders
+                    where userId = %s and restaurantId = %s and reservTime >= (select addtime(now(), '08:30:00'))
+                    order by reservTime asc;
+                    '''
+            record = (userId, restaurantId)
+            cursor.execute(query, record)
+            orderInfo = cursor.fetchall()
+
+            for row in orderInfo:
+                if row['id']:
                     row['reservTime'] = row['reservTime'].isoformat()
                     row['createdAt'] = row['createdAt'].isoformat()
             
@@ -305,5 +313,6 @@ class FaceSearchResource(Resource):
             return {'error' : str(e)}, 500
 
         return {'result' : 'success',
-                'items' : result_list,
+                'userInfo' : userInfo,
+                'orderInfo' : orderInfo,
                 'similarity' : similarity}, 200
