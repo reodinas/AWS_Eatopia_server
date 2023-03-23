@@ -32,7 +32,7 @@ class OrderListResource(Resource):
                     select *
                     from orders
                     where userId = %s
-                    order by createdAt desc;
+                    order by createdAt desc
                     limit '''+offset+''', '''+limit+''';
                     '''
             record = (userId, )
