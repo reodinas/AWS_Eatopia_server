@@ -63,8 +63,8 @@ class RestaurantListResource(Resource):
                 query = '''
                         select r.id, r.name, r.category, r.locCity, r.locDistrict, r.locDetail,
                             r.longitude, r.latitude, r.imgUrl,
-                            ifnull(count(rv.restaurantId), 0) as count,
-                            ifnull(avg(rv.rating), 0) as rating
+                            ifnull(count(rv.restaurantId), 0) as cnt,
+                            ifnull(avg(rv.rating), 0) as avg
                         from restaurant r
                         left join review rv
                         on r.id = rv.restaurantId
@@ -100,8 +100,8 @@ class RestaurantListResource(Resource):
                 query = '''
                         select r.id, r.name, r.category, r.locCity, r.locDistrict, r.locDetail,
                             r.longitude, r.latitude, r.imgUrl,
-                            ifnull(count(rv.restaurantId), 0) as count,
-                            ifnull(avg(rv.rating), 0) as rating
+                            ifnull(count(rv.restaurantId), 0) as cnt,
+                            ifnull(avg(rv.rating), 0) as avg
                         from restaurant r
                         left join review rv
                         on r.id = rv.restaurantId
