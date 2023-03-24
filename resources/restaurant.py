@@ -160,7 +160,7 @@ class RestaurantListResource(Resource):
             return {'error' : '올바르지 않은 order 입니다.'}, 400
         
         # print(df)
-        result_list = df.iloc[offset:limit]
+        result_list = df.iloc[offset:offset+limit]
         result_list = result_list.to_dict('records')
         # print(result_list)
 
