@@ -25,6 +25,9 @@ class OrderListResource(Resource):
         if not limit:
             limit = 20
 
+        offset = int(offset)
+        limit = int(limit)
+
         try:
             connection = get_connection()
             # 주문한 시간이 늦은 순으로 정렬
@@ -33,7 +36,7 @@ class OrderListResource(Resource):
                     from orders
                     where userId = %s
                     order by createdAt desc
-                    limit '''+offset+''', '''+limit+''';
+                    limit '''+offset+''', '''+(offset+limit)+''';
                     '''
             record = (userId, )
             cursor = connection.cursor(dictionary=True, buffered=True)

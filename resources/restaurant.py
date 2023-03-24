@@ -228,13 +228,16 @@ class RestaurantMenuResource(Resource):
         if not limit:
             limit = 20
 
+        offset = int(offset)
+        limit = int(limit)
+
         try:
             connection = get_connection()
             query = '''
                     select * 
                     from menu
                     where restaurantId = %s
-                    limit '''+offset+''', '''+limit+''';
+                    limit '''+offset+''', '''+(offset+limit)+''';
                     '''  
             record = (restaurantId, )
             cursor = connection.cursor(dictionary=True)
