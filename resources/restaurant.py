@@ -75,7 +75,7 @@ class RestaurantListResource(Resource):
                 result_list = cursor.fetchall()
 
                 for row in result_list:
-                    row['rating'] = float(row['rating'])
+                    row['avg'] = float(row['avg'])
 
                 cursor.close()
                 connection.close()
@@ -115,7 +115,7 @@ class RestaurantListResource(Resource):
                 result_list = cursor.fetchall()
 
                 for row in result_list:
-                    row['rating'] = float(row['rating'])
+                    row['avg'] = float(row['avg'])
 
                 cursor.close()
                 connection.close()
