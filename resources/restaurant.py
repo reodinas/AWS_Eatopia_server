@@ -237,7 +237,7 @@ class RestaurantMenuResource(Resource):
                     select * 
                     from menu
                     where restaurantId = %s
-                    limit '''+offset+''', '''+(offset+limit)+''';
+                    limit '''+offset+''', '''+limit+''';
                     '''  
             record = (restaurantId, )
             cursor = connection.cursor(dictionary=True)
