@@ -61,8 +61,7 @@ class RestaurantListResource(Resource):
             try:
                 connection = get_connection()
                 query = '''
-                        select r.id, r.name, r.category, r.locCity, r.locDistrict, r.locDetail,
-                            r.longitude, r.latitude, r.imgUrl,
+                        select r.*,
                             ifnull(count(rv.restaurantId), 0) as cnt,
                             ifnull(avg(rv.rating), 0) as avg
                         from restaurant r
@@ -98,8 +97,7 @@ class RestaurantListResource(Resource):
             try:
                 connection = get_connection()
                 query = '''
-                        select r.id, r.name, r.category, r.locCity, r.locDistrict, r.locDetail,
-                            r.longitude, r.latitude, r.imgUrl,
+                        select r.*,
                             ifnull(count(rv.restaurantId), 0) as cnt,
                             ifnull(avg(rv.rating), 0) as avg
                         from restaurant r
@@ -161,7 +159,7 @@ class RestaurantListResource(Resource):
             return {'error' : '올바르지 않은 order 입니다.'}, 400
         
         # print(df)
-        result_list = df.iloc[offset:offset+limit]
+        result_list = df.iloc[offset:offset+limit, ]
         result_list = result_list.to_dict('records')
         # print(result_list)
 
