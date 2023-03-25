@@ -75,6 +75,8 @@ class RestaurantListResource(Resource):
 
                 for row in result_list:
                     row['avg'] = float(row['avg'])
+                    row['createdAt'] = row['createdAt'].isoformat()
+                    row['updatedAt'] = row['updatedAt'].isoformat()
 
                 cursor.close()
                 connection.close()
@@ -114,6 +116,8 @@ class RestaurantListResource(Resource):
 
                 for row in result_list:
                     row['avg'] = float(row['avg'])
+                    row['createdAt'] = row['createdAt'].isoformat()
+                    row['updatedAt'] = row['updatedAt'].isoformat()
 
                 cursor.close()
                 connection.close()
