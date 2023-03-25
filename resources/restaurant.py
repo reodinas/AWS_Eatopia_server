@@ -148,12 +148,12 @@ class RestaurantListResource(Resource):
             distanceList.append(distance)
         
         # 거리 컬럼 추가
-        df['dist'] = distanceList
+        df['distance'] = distanceList
         # print(df.columns)
 
         # 가까운 순 정렬
         if order == 'dist':
-            df = df.sort_values(order, ascending=True)
+            df = df.sort_values('distance', ascending=True)
         # 리뷰갯수 or 평점 순 정렬
         elif order == 'cnt' or order == 'avg':
             df = df.sort_values(order, ascending=False)
