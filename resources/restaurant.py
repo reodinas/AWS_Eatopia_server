@@ -42,6 +42,9 @@ class RestaurantListResource(Resource):
         if not keyword:
             keyword = ''
 
+        if order == 'dist':
+            order = 'distance'
+
         lat = float(lat)
         lng = float(lng)
         offset = int(offset)
@@ -60,17 +63,35 @@ class RestaurantListResource(Resource):
         if not keyword:
             try:
                 connection = get_connection()
-                query = '''
-                        select r.*,
-                            ifnull(count(rv.restaurantId), 0) as cnt,
-                            ifnull(avg(rv.rating), 0) as avg
-                        from restaurant r
-                        left join review rv
-                        on r.id = rv.restaurantId
-                        group by r.id;
-                        '''  
+                if order == 'distance':
+                    query = '''
+                            select r.*,
+                                ifnull(count(rv.restaurantId), 0) as cnt,
+                                ifnull(avg(rv.rating), 0) as avg,
+                                CAST(ROUND(6371000 * acos(cos(radians(%s)) * cos(radians(latitude)) * cos(radians(longitude) - radians(%s)) + sin(radians(%s)) * sin(radians(latitude)))) AS UNSIGNED) as distance
+                            from restaurant r 
+                            left join review rv
+                            on r.id = rv.restaurantId
+                            group by r.id
+                            order by '''+order+'''
+                            limit %s, %s;
+                            '''  
+                if (order == 'cnt') or (order == 'avg'):
+                    query = '''
+                            select r.*,
+                                ifnull(count(rv.restaurantId), 0) as cnt,
+                                ifnull(avg(rv.rating), 0) as avg,
+                                CAST(ROUND(6371000 * acos(cos(radians(%s)) * cos(radians(latitude)) * cos(radians(longitude) - radians(%s)) + sin(radians(%s)) * sin(radians(latitude)))) AS UNSIGNED) as distance
+                            from restaurant r 
+                            left join review rv
+                            on r.id = rv.restaurantId
+                            group by r.id
+                            order by '''+order+''' desc
+                            limit %s, %s;
+                            '''  
                 cursor = connection.cursor(dictionary=True)
-                cursor.execute(query)
+                record = (lat, lng, lat, offset, limit)
+                cursor.execute(query, record)
                 result_list = cursor.fetchall()
 
                 for row in result_list:
@@ -98,19 +119,38 @@ class RestaurantListResource(Resource):
 
             try:
                 connection = get_connection()
-                query = '''
-                        select r.*,
-                            ifnull(count(rv.restaurantId), 0) as cnt,
-                            ifnull(avg(rv.rating), 0) as avg
-                        from restaurant r
-                        left join review rv
-                        on r.id = rv.restaurantId
-                        where match(locCity, locDistrict, locDetail, name, category)
-                        against("%s" in boolean mode)
-                        group by r.id;
-                        '''  
+                if order == 'distance':
+                    query = '''
+                            select r.*,
+                                ifnull(count(rv.restaurantId), 0) as cnt,
+                                ifnull(avg(rv.rating), 0) as avg,
+                                CAST(ROUND(6371000 * acos(cos(radians(%s)) * cos(radians(latitude)) * cos(radians(longitude) - radians(%s)) + sin(radians(%s)) * sin(radians(latitude)))) AS UNSIGNED) as distance
+                            from restaurant r
+                            left join review rv
+                            on r.id = rv.restaurantId
+                            where match(locCity, locDistrict, locDetail, name, category)
+                            against("%s" in boolean mode)
+                            group by r.id
+                            order by '''+order+'''
+                            limit %s, %s;
+                            '''  
+                if (order == 'cnt') or (order == 'avg'):
+                    query = '''
+                            select r.*,
+                                ifnull(count(rv.restaurantId), 0) as cnt,
+                                ifnull(avg(rv.rating), 0) as avg,
+                                CAST(ROUND(6371000 * acos(cos(radians(%s)) * cos(radians(latitude)) * cos(radians(longitude) - radians(%s)) + sin(radians(%s)) * sin(radians(latitude)))) AS UNSIGNED) as distance
+                            from restaurant r
+                            left join review rv
+                            on r.id = rv.restaurantId
+                            where match(locCity, locDistrict, locDetail, name, category)
+                            against("%s" in boolean mode)
+                            group by r.id
+                            order by '''+order+''' desc
+                            limit %s, %s;
+                            '''  
                 cursor = connection.cursor(dictionary=True)
-                record = (search,)
+                record = (lat, lng, lat, search, offset, limit)
                 cursor.execute(query, record)
                 result_list = cursor.fetchall()
 
@@ -134,38 +174,38 @@ class RestaurantListResource(Resource):
                         'count' : len(result_list)}, 200
 
 
-        # 가게와의 거리를 계산하기 위해 데이터프레임으로
-        df = pd.DataFrame(data=result_list)
+        # # 가게와의 거리를 계산하기 위해 데이터프레임으로
+        # df = pd.DataFrame(data=result_list)
 
-        # print(df)
-        myLocation = (lat, lng)
-        # print(myLocation)
+        # # print(df)
+        # myLocation = (lat, lng)
+        # # print(myLocation)
 
-        LocationList = np.array(df[['latitude','longitude']])
+        # LocationList = np.array(df[['latitude','longitude']])
 
-        # 하버사인 거리 계산
-        distanceList = []
-        for row in LocationList:
-            distance = round(haversine(myLocation, row, unit='m'))
-            distanceList.append(distance)
+        # # 하버사인 거리 계산
+        # distanceList = []
+        # for row in LocationList:
+        #     distance = round(haversine(myLocation, row, unit='m'))
+        #     distanceList.append(distance)
         
-        # 거리 컬럼 추가
-        df['distance'] = distanceList
-        # print(df.columns)
+        # # 거리 컬럼 추가
+        # df['distance'] = distanceList
+        # # print(df.columns)
 
-        # 가까운 순 정렬
-        if order == 'dist':
-            df = df.sort_values('distance', ascending=True)
-        # 리뷰갯수 or 평점 순 정렬
-        elif order == 'cnt' or order == 'avg':
-            df = df.sort_values(order, ascending=False)
-        else:
-            return {'error' : '올바르지 않은 order 입니다.'}, 400
+        # # 가까운 순 정렬
+        # if order == 'dist':
+        #     df = df.sort_values('distance', ascending=True)
+        # # 리뷰갯수 or 평점 순 정렬
+        # elif order == 'cnt' or order == 'avg':
+        #     df = df.sort_values(order, ascending=False)
+        # else:
+        #     return {'error' : '올바르지 않은 order 입니다.'}, 400
         
-        # print(df)
-        result_list = df.iloc[offset:offset+limit, ]
-        result_list = result_list.to_dict('records')
-        # print(result_list)
+        # # print(df)
+        # result_list = df.iloc[offset:offset+limit, ]
+        # result_list = result_list.to_dict('records')
+        # # print(result_list)
 
         return {'result' : 'success',
                 'items' : result_list,
