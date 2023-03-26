@@ -280,9 +280,9 @@ class RestaurantMenuResource(Resource):
                     select * 
                     from menu
                     where restaurantId = %s
-                    limit '''+offset+''', '''+limit+''';
+                    limit %s, %s;
                     '''  
-            record = (restaurantId, )
+            record = (restaurantId, offset, limit)
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query, record)
             result_list = cursor.fetchall()

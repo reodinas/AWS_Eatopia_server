@@ -36,9 +36,9 @@ class OrderListResource(Resource):
                     from orders
                     where userId = %s
                     order by createdAt desc
-                    limit '''+offset+''', '''+limit+''';
+                    limit %s, %s;
                     '''
-            record = (userId, )
+            record = (userId, offset, limit)
             cursor = connection.cursor(dictionary=True, buffered=True)
             cursor.execute(query, record)
             result_list = cursor.fetchall()
