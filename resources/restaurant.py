@@ -337,7 +337,7 @@ class RestaurantOrderResource(Resource):
                         (orderId, menuId, count)
                         values (%s, %s, %s);
                         '''
-                record = [orderId, row['menuId'], row['count']]
+                record = [orderId, row['id'], row['count']]
                 cursor.execute(query, record)
             
             connection.commit()
