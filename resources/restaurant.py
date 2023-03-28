@@ -320,10 +320,19 @@ class RestaurantOrderResource(Resource):
             # 1. order 테이블에 저장
             query = '''
                     insert into orders
-                    (userId, restaurantId, people, reservTime, type)
-                    values (%s, %s, %s, %s, %s);
+                    (userId, restaurantId, people, reservTime, type, priceSum)
+                    values (%s, %s, %s, %s, %s, %s);
                     '''
-            record = [userId, restaurantId, data['people'], data['reservTime'], data['type']]
+            # 메뉴 가격 총합 계산
+            priceSum = 0
+            for row in menuInfo:
+                if row['price'] != -1:
+                    priceSum += row['price'] * row['count']
+                else:
+                    priceSum = -1
+                    break
+
+            record = [userId, restaurantId, data['people'], data['reservTime'], data['type'], priceSum]
 
             cursor = connection.cursor()
             cursor.execute(query, record)
@@ -354,3 +363,4 @@ class RestaurantOrderResource(Resource):
 
         return {'result' : 'success',
                 'orderId' : orderId}, 200
+    
