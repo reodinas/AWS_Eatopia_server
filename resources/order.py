@@ -81,13 +81,13 @@ class OrderResource(Resource):
             
             cursor = connection.cursor(dictionary=True)
             cursor.execute(query, record)
-            result = cursor.fetchone()
+            orderInfo = cursor.fetchone()
 
-            result['reservTime'] = result['reservTime'].isoformat()
-            result['createdAt'] = result['createdAt'].isoformat()
+            orderInfo['reservTime'] = orderInfo['reservTime'].isoformat()
+            orderInfo['createdAt'] = orderInfo['createdAt'].isoformat()
 
             # 요청한 유저아이디가 주문정보의 유저아이디와 다를 경우
-            if userId != int(result['userId']):
+            if userId != int(orderInfo['userId']):
                 cursor.close()
                 connection.close()
                 return {'error' : '접근 권한이 없습니다.'}, 401
@@ -105,8 +105,6 @@ class OrderResource(Resource):
             cursor.execute(query, record)
             menuInfo = cursor.fetchall()
 
-            result['menuInfo'] = menuInfo
-
             cursor.close()
             connection.close()
 
@@ -118,5 +116,6 @@ class OrderResource(Resource):
             return {'error' : str(e)}, 500
 
         return {'result' : 'success',
-                'orderInfo' : result}, 200
+                'orderInfo' : orderInfo,
+                'menuInfo' : menuInfo}, 200
     
