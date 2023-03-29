@@ -124,7 +124,7 @@ class UserLoginResource(Resource):
         check = check_password(data['password'], result_list[0]['password'])
 
         if check == False:
-            return {'error' : '비밀번호가 틀립니다.'}, 400
+            return {'error' : '비밀번호가 일치하지 않습니다.'}, 400
 
         # 4. JWT 토큰을 만들어서 클라이언트에게 보낸다.
         access_token = create_access_token( result_list[0]['id'] )
