@@ -29,6 +29,7 @@ class RestaurantListResource(Resource):
         if not lat or not lng:
             return {'error' : 'lat와 lng는 필수 파라미터입니다.'}, 400
 
+        
         # 기본값
         if not offset:
             offset = 0
@@ -44,6 +45,9 @@ class RestaurantListResource(Resource):
 
         if order == 'dist':
             order = 'distance'
+
+        if (order != 'distance') & (order != 'avg') & (order != 'cnt'):
+            return {'error' : '올바르지 않은 order 입니다.'}, 400
 
         lat = float(lat)
         lng = float(lng)
