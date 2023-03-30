@@ -84,8 +84,8 @@ class OrderListResource(Resource):
 
                 response_data.append({
                     "orderInfo": orderInfo,
-                    "restaurantInfo": restaurantInfo,
-                    "menuInfo": menuInfo
+                    "menuInfo": menuInfo,
+                    "restaurantInfo": restaurantInfo    
                 })
 
             cursor.close()
