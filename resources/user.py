@@ -149,3 +149,60 @@ class UserLogoutResource(Resource):
         return {'result' : 'success'}, 200
 
 
+class UserResource(Resource):
+
+    # 회원정보 조회
+    @jwt_required()
+    def get(self):
+
+        userId = get_jwt_identity()
+        
+        # DB로부터 해당 유저의 데이터를 가져온다.
+        try:
+            connection = get_connection()
+            query = '''select email, nickname, phone
+                    from users
+                    where id = %s;'''
+
+            record = (userId, )
+
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query, record)
+
+            result_list = cursor.fetchone()
+
+            if not result_list:
+                return {'error' : '회원가입한 사람이 아닙니다.'}, 400
+            
+            
+            query = '''select imgUrl
+                    from face
+                    where userId = %s;'''
+
+            record = (userId, )
+
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query, record)
+            
+            result = cursor.fetchone()
+            if result:
+                imgUrl = result['imgUrl']
+            else:
+                imgUrl = ''
+
+            cursor.close()
+            connection.close()
+        
+        except Error as e:
+            print(e)
+            cursor.close()
+            connection.close()
+            return {'error' : str(e)}, 500
+
+        # print(result_list)
+
+        # 2. 등록된 사진주소를 가져온다.
+
+        return {'result' : 'success',
+                'userInfo' : result_list,
+                'imgUrl': imgUrl}, 200

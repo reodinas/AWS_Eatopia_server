@@ -8,7 +8,7 @@ from resources.face import FaceResource, FaceSearchResource
 from resources.order import OrderResource, OrderListResource
 from resources.restaurant import RestaurantMenuResource, RestaurantResource, RestaurantListResource, RestaurantOrderResource
 
-from resources.user import UserLoginResource, UserLogoutResource, UserRegisterResource
+from resources.user import UserLoginResource, UserLogoutResource, UserRegisterResource, UserResource
 from resources.user import jwt_blocklist
 
 app = Flask(__name__)
@@ -32,6 +32,7 @@ api = Api(app)
 api.add_resource(UserRegisterResource, '/user/register')
 api.add_resource(UserLoginResource, '/user/login')
 api.add_resource(UserLogoutResource, '/user/logout')
+api.add_resource(UserResource, '/user')
 
 api.add_resource(RestaurantListResource, '/restaurant')
 api.add_resource(RestaurantResource, '/restaurant/<int:restaurantId>')
