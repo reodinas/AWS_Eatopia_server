@@ -43,10 +43,51 @@ class OrderListResource(Resource):
             cursor.execute(query, record)
             result_list = cursor.fetchall()
 
+            response_data = []
+
             for row in result_list:
-                row['reservTime'] = row['reservTime'].isoformat()
-                row['createdAt'] = row['createdAt'].isoformat()
-            
+                # orderInfo
+                orderInfo = {
+                    "id": row["id"],
+                    "userId": row["userId"],
+                    "restaurantId": row["restaurantId"],
+                    "people": row["people"],
+                    "reservTime": row["reservTime"].isoformat(),
+                    "type": row["type"],
+                    "createdAt": row["createdAt"].isoformat(),
+                    "isVisited": row["isVisited"],
+                    "priceSum": row["priceSum"]
+                }
+
+                # restaurantInfo
+                restaurant_query = '''
+                                   select *
+                                   from restaurant
+                                   where id = %s;
+                                   '''
+                cursor.execute(restaurant_query, (row['restaurantId'],))
+                restaurantInfo = cursor.fetchone()
+                restaurantInfo['createdAt'] = restaurantInfo['createdAt'].isoformat()
+                restaurantInfo['updatedAt'] = restaurantInfo['updatedAt'].isoformat()
+
+                # menuInfo
+                menu_query = '''
+                             select od.menuId, od.count, m.menuName, 
+                                 m.price, m.description, m.imgUrl
+                             from orderDetail od
+                             join menu m
+                             on od.menuId = m.id
+                             where orderId = %s;
+                             '''
+                cursor.execute(menu_query, (row['id'],))
+                menuInfo = cursor.fetchall()
+
+                response_data.append({
+                    "orderInfo": orderInfo,
+                    "restaurantInfo": restaurantInfo,
+                    "menuInfo": menuInfo
+                })
+
             cursor.close()
             connection.close()
         
@@ -57,8 +98,8 @@ class OrderListResource(Resource):
             return {'error' : str(e)}, 500
 
         return {'result' : 'success',
-                'items' : result_list,
-                'count' : len(result_list)}, 200
+                'items' : response_data,
+                'count' : len(response_data)}, 200
 
 
 
