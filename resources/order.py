@@ -35,7 +35,7 @@ class OrderListResource(Resource):
                     select *
                     from orders
                     where userId = %s
-                    order by createdAt desc
+                    order by reservTime desc
                     limit %s, %s;
                     '''
             record = (userId, offset, limit)
