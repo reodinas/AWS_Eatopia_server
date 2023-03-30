@@ -281,7 +281,8 @@ class RestaurantMenuResource(Resource):
         try:
             connection = get_connection()
             query = '''
-                    select * 
+                    select id as menuId, restaurantId, menuName, price, 
+                        description, imgurl, createdAt, updatedAt
                     from menu
                     where restaurantId = %s
                     limit %s, %s;
