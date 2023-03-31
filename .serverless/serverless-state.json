@@ -175,7 +175,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/aws-eatopia-server/dev/1678875250213-2023-03-15T10:14:10.213Z/aws-eatopia-server.zip"
+                "S3Key": "serverless/aws-eatopia-server/dev/1680243913085-2023-03-31T06:25:13.085Z/aws-eatopia-server.zip"
               },
               "Handler": "wsgi_handler.handler",
               "Runtime": "python3.9",
@@ -193,14 +193,14 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersioninJEWzpAFl3jEqw3BIh98GHhY8c6NeccGU82DkMkM": {
+          "ApiLambdaVersionCK5FYmdnbmXEfRmLHneYjaGBVohkLdd8RDGli1qiyug": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "1l78BBa8FUESz9e/B+2BObYOtIU4qREOJVrhaQwHeo8="
+              "CodeSha256": "Jb6le2kVHPhRVhcK9ynOrYqH1aalD0nBnvOmrgsn+Wo="
             }
           },
           "HttpApi": {
@@ -308,7 +308,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersioninJEWzpAFl3jEqw3BIh98GHhY8c6NeccGU82DkMkM"
+              "Ref": "ApiLambdaVersionCK5FYmdnbmXEfRmLHneYjaGBVohkLdd8RDGli1qiyug"
             },
             "Export": {
               "Name": "sls-aws-eatopia-server-dev-ApiLambdaFunctionQualifiedArn"
@@ -459,7 +459,7 @@
         "timeout": 20,
         "runtime": "python3.9",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersioninJEWzpAFl3jEqw3BIh98GHhY8c6NeccGU82DkMkM"
+        "versionLogicalId": "ApiLambdaVersionCK5FYmdnbmXEfRmLHneYjaGBVohkLdd8RDGli1qiyug"
       }
     },
     "configValidationMode": "warn",
@@ -485,7 +485,7 @@
     "artifact": "C:\\Users\\5-25\\Documents\\GitHub\\AWS_Eatopia_server\\.serverless\\aws-eatopia-server.zip"
   },
   "package": {
-    "artifactDirectoryName": "serverless/aws-eatopia-server/dev/1678875250213-2023-03-15T10:14:10.213Z",
+    "artifactDirectoryName": "serverless/aws-eatopia-server/dev/1680243913085-2023-03-31T06:25:13.085Z",
     "artifact": "aws-eatopia-server.zip"
   }
 }
