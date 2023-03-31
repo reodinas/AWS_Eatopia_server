@@ -291,7 +291,7 @@ class FaceSearchResource(Resource):
             query = '''
                     select *
                     from orders
-                    where userId = %s and restaurantId = %s and reservTime >= (select addtime(now(), '08:30:00'))
+                    where userId = %s and restaurantId = %s and reservTime >= (select subtime(now(), 00:30:00))
                     order by reservTime asc;
                     '''
             record = (userId, restaurantId)
@@ -303,8 +303,25 @@ class FaceSearchResource(Resource):
                     row['reservTime'] = row['reservTime'].isoformat()
                     row['createdAt'] = row['createdAt'].isoformat()
             
+            # 방문 여부 변경
+            if orderInfo:
+                orderId = orderInfo[0]['id']
+                query = '''
+                    update orders
+                    set isVisited = 1
+                    where id = %s;
+                    '''
+                cursor.execute(query, (orderId,))
+                connection.commit()
+
+                # FCM 코드 작성
+
+
             cursor.close()
             connection.close()
+
+
+
         
         except Error as e:
             print(e)
