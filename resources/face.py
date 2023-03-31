@@ -287,11 +287,11 @@ class FaceSearchResource(Resource):
 
             userId = userInfo['userId']
             
-            # 로컬시간: now() + 9시간, 유예시간: 30분 
+            # 로컬시간: now(), 유예시간: 30분 
             query = '''
                     select *
                     from orders
-                    where userId = %s and restaurantId = %s and reservTime >= (select subtime(now(), 00:30:00))
+                    where userId = %s and restaurantId = %s and reservTime >= (select subtime(now(), '00:30:00'))
                     order by reservTime asc;
                     '''
             record = (userId, restaurantId)
