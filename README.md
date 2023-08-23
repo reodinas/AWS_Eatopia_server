@@ -1,4 +1,4 @@
-# EatopiaApp
+# AWS_Eatopia_server
 프로젝트 기술서: https://docs.google.com/presentation/d/1bYgy4jAT8qyHtjLzlYQknmbSPmculr9w33WyEgrB9cQ/edit?usp=sharing
 
 데이터: https://github.com/reodinas/Eatopia_data
