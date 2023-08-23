@@ -282,7 +282,7 @@ class RestaurantMenuResource(Resource):
             connection = get_connection()
             query = '''
                     select id as menuId, restaurantId, menuName, price, 
-                        description, imgurl, createdAt, updatedAt
+                        description, imgUrl, createdAt, updatedAt
                     from menu
                     where restaurantId = %s
                     limit %s, %s;
