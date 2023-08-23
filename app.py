@@ -51,4 +51,3 @@ api.add_resource(FaceSearchResource, '/faces/search')
 
 if __name__ == '__main__':
     app.run()
-    
